@@ -4,7 +4,11 @@
       <div class="q-mb-xl">
         <q-input v-model="tempData.name" label="姓名" />
         <q-input v-model="tempData.age" label="年齡" />
-        <q-btn color="primary" class="q-mt-md">新增</q-btn>
+        <q-btn
+          color="primary"
+          class="q-mt-md"
+          @click="addDataHandler"
+        >{{ editStart ? '編輯' : '新增' }}</q-btn>
       </div>
 
       <q-table
@@ -38,8 +42,8 @@
             </q-td>
             <q-td class="text-right" auto-width v-if="tableButtons.length > 0">
               <q-btn
-                @click="handleClickOption(btn, props.row)"
                 v-for="(btn, index) in tableButtons"
+                @click="handleClickOption(btn, props.row)"
                 :key="index"
                 size="sm"
                 color="grey-6"
@@ -84,12 +88,19 @@ interface btnType {
   icon: string;
   status: string;
 }
-const blockData = ref([
+let blockData = ref([
   {
     name: 'test',
     age: 25,
   },
 ]);
+
+// Get stored data from local storage
+const storedData = localStorage.getItem('people')
+if (storedData) {
+  blockData.value = JSON.parse(storedData)
+}
+
 const tableConfig = ref([
   {
     label: '姓名',
@@ -121,9 +132,55 @@ const tempData = ref({
   name: '',
   age: '',
 });
-function handleClickOption(btn, data) {
-  // ...
+
+// Control edit status
+let editStart = false
+
+// Declare the targeted data
+let targetData = ref({
+  name: '',
+  age: '',
+});
+
+// Edit or Add
+function addDataHandler(): void {
+  if (editStart) {
+    targetData.value.name = tempData.value.name
+    targetData.value.age = tempData.value.age
+    editStart = false
+
+    tempData.value.name = ''
+    tempData.value.age = ''
+
+    localStorage.setItem('people', JSON.stringify(blockData.value))
+  } else {
+    const newData = ref(tempData)
+    blockData.value.push({
+      name: newData.value.name,
+      age: parseInt(newData.value.age)
+    })
+  
+    tempData.value.name = ''
+    tempData.value.age = ''
+
+    localStorage.setItem('people', JSON.stringify(blockData.value))
+  }
 }
+
+// Edit and delete handlers in the table
+function handleClickOption(btn: any, data: any) {
+  if (btn.status === 'delete') {
+    blockData.value = blockData.value.filter(blockData => blockData.name !== data.name)
+    
+    localStorage.setItem('people', JSON.stringify(blockData.value))
+  } else if(btn.status === 'edit') {
+    editStart = true
+    targetData.value = data
+    tempData.value.name = targetData.value.name
+    tempData.value.age = targetData.value.age
+  }
+}
+
 </script>
 
 <style lang="scss" scoped>
